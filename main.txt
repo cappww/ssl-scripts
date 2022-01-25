@@ -1,0 +1,64 @@
+# Step 1: Generate a key for the certificate authority
+openssl genpkey \
+    -algorithm RSA \
+    -pkeyopt rsa_keygen_bits:4096 > ./ca-key.pem
+
+# Step 2: Generate certificate for the certificate authority from the key
+openssl req \
+    -new \
+    -x509 \
+    -nodes \
+    -days 365 \
+    -key ./ca-key.pem \
+    -out ./ca-cert.pem \
+    -subj "/C=US/ST=California/L=Sacramento/O=MasterWallet/CN=MW CA"
+
+# Step 3: Generate private key for server and a certificate request for the server
+openssl req \ 
+    -newkey rsa:4096 \
+    -nodes \
+    -keyout ./server-key.pem \
+    -out ./server-req.pem \
+    -subj "/C=US/ST=California/L=Sacramento/O=MasterWallet/CN=americanrivergold.com"
+
+# Step 4: Generate certificate for the server
+openssl x509 \
+    -req \
+    -in ./server-req.pem \
+    -days 365 \
+    -CA ./ca-cert.pem \
+    -CAkey ./ca-key.pem \
+    -CAcreateserial \
+    -out ./server-cert.pem
+
+# Step 5: Repeat steps 3 and 4 for the client key and certificate
+openssl req \ 
+    -newkey rsa:4096 \
+    -nodes \
+    -keyout ./client-key.pem \
+    -out ./client-req.pem \
+    -subj "/C=US/ST=California/L=Sacramento/O=MasterWallet/CN=capp_wiedenhoefer"
+
+openssl x509 \
+    -req \
+    -in ./client-req.pem \
+    -days 365 \
+    -CA ./ca-cert.pem \
+    -CAkey ./ca-key.pem \
+    -CAcreateserial \
+    -out ./client-cert.pem
+
+# Step 6: Convert the openssl server and client keys to an rsa keys
+openssl rsa \
+    -in ./server-key.pem \
+    -out ./server-key-rsa.pem
+
+openssl rsa \
+    -in ./client-key.pem \
+    -out ./client-key-rsa.pem
+
+# Check the expiration date of certificate, (ca, server, client, or otherwise)
+openssl x509 \
+    -enddate \
+    -noout \
+    -in ./ca-cert.pem
